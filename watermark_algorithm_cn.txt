@@ -1,0 +1,77 @@
+Gemini 去水印算法说明（核心逻辑）
+
+1) 水印成像模型
+- 该项目假设 Gemini 的可见水印采用标准 alpha 混合：
+  watermarked = alpha * logo + (1 - alpha) * original
+- 其中：
+  - watermarked：带水印的像素值
+  - alpha：水印透明度（0.0~1.0）
+  - logo：水印颜色值（白色，RGB=255）
+  - original：原始像素值（目标恢复值）
+- 反向求解得到：
+  original = (watermarked - alpha * logo) / (1 - alpha)
+  本项目用该公式逐像素恢复原图。
+
+2) 水印尺寸与位置规则（检测逻辑）
+- 规则来自代码中的 detectWatermarkConfig 与 calculateWatermarkPosition：
+  - 如果图像宽度 > 1024 且高度 > 1024：
+    - 水印尺寸：96 x 96
+    - 右边距：64px
+    - 下边距：64px
+  - 否则：
+    - 水印尺寸：48 x 48
+    - 右边距：32px
+    - 下边距：32px
+- 水印位于右下角，位置计算：
+  x = imageWidth  - marginRight  - logoSize
+  y = imageHeight - marginBottom - logoSize
+  width  = logoSize
+  height = logoSize
+
+3) alpha map 的来源与计算
+- 算法依赖预先捕获的水印背景图（项目内对应 bg_48.png 和 bg_96.png）。
+- 思路：在已知纯色背景上截取水印块（包含 logo 的透明度信息），
+  通过该图像反推每个像素的 alpha。
+- 具体计算（calculateAlphaMap）：
+  - 对水印背景图每个像素，取 RGB 三通道最大值 max(r,g,b)。
+  - 归一化：alpha = maxChannel / 255.0。
+  - 结果为 Float32Array，大小为 logoSize * logoSize。
+- 该做法等价于在黑色背景上获取“白色水印”的亮度作为透明度。
+
+4) 反向 alpha 混合去水印（逐像素）
+- 处理范围仅限于水印区域（右下角 logoSize x logoSize）。
+- 对区域内每个像素：
+  - 取 alphaMap 中对应位置的 alpha。
+  - 过滤与约束：
+    - 若 alpha < 0.002，视为噪声，跳过该像素（不处理）。
+    - alpha 上限为 0.99，避免 (1 - alpha) 过小导致数值爆炸。
+  - 对 RGB 三个通道分别计算：
+    original = (watermarked - alpha * 255) / (1 - alpha)
+  - 将 original 四舍五入并夹紧到 [0, 255]。
+- Alpha 通道本身不修改（只改 RGB）。
+
+5) 端到端处理流程（核心算法步骤）
+- 输入：一张带 Gemini 可见水印的图片（Image/Canvas）。
+- 步骤：
+  1. 读取图片宽高，判断水印尺寸与边距规则。
+  2. 根据规则计算水印区域位置（右下角坐标）。
+  3. 选择匹配尺寸的背景捕获图，计算并缓存 alpha map。
+  4. 读取整张图片的 ImageData。
+  5. 在水印区域内按“反向 alpha 混合”逐像素恢复原始颜色。
+  6. 将处理后的 ImageData 写回画布。
+- 输出：去水印后的图像。
+
+6) 关键参数与实现要点（来自代码常量）
+- ALPHA_THRESHOLD = 0.002（忽略极小透明度，降低噪声）
+- MAX_ALPHA = 0.99（避免除以接近 0）
+- LOGO_VALUE = 255（假设水印为纯白）
+
+7) 实现复刻的最小要素清单
+- 水印尺寸检测规则（48/96 + 边距）
+- 水印位置计算公式
+- 预先准备的水印背景图（对应两种尺寸）
+- alpha map 计算方法（max RGB / 255）
+- 反向 alpha 混合公式（逐像素，限制 alpha，RGB 处理）
+- 处理范围限定为水印区域
+
+以上即该项目去水印的完整算法逻辑。
