@@ -1,6 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
     const APP_NAME = 'Nano Cleanse';
 
+    function setupMobileViewportUnit() {
+        const root = document.documentElement;
+        const vv = window.visualViewport;
+
+        function update() {
+            const height = vv ? vv.height : window.innerHeight;
+            root.style.setProperty('--vvh', `${height * 0.01}px`);
+        }
+
+        update();
+        window.addEventListener('resize', update);
+        window.addEventListener('orientationchange', update);
+        if (vv) {
+            vv.addEventListener('resize', update);
+            vv.addEventListener('scroll', update);
+        }
+    }
+
     const translations = {
         en: {
             'nav.library': 'LIBRARY',
@@ -211,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Theme + i18n ---
+    setupMobileViewportUnit();
     applyThemeFromSystem();
     applyTranslations();
     applyRecentsLayout(recentsLayout);
