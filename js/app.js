@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         en: {
             'nav.library': 'LIBRARY',
             'nav.allPhotos': 'All Photos',
+            'nav.batch': 'Batch Remove',
             'nav.recents': 'Recents',
             'nav.tools': 'TOOLS',
             'nav.restoration': 'Nano Cleanse',
@@ -51,11 +52,24 @@ document.addEventListener('DOMContentLoaded', () => {
             'recents.clearConfirm': 'Clear all history?',
             'recents.delete': 'Delete',
             'recents.deleteConfirm': 'Delete this item?',
-            'recents.count': '{count} items'
+            'recents.count': '{count} items',
+            'batch.import': 'Import Photos',
+            'batch.downloadAll': 'Download All',
+            'batch.clear': 'Clear Queue',
+            'batch.empty': 'No photos in queue',
+            'batch.colName': 'Name',
+            'batch.colSize': 'Size',
+            'batch.colStatus': 'Status',
+            'batch.count': '{count} items',
+            'batch.status.waiting': 'Waiting',
+            'batch.status.processing': 'Processing...',
+            'batch.status.done': 'Done',
+            'batch.status.error': 'Error'
         },
         zh: {
             'nav.library': '资料库',
             'nav.allPhotos': '全部照片',
+            'nav.batch': '批量去除',
             'nav.recents': '最近项目',
             'nav.tools': '工具',
             'nav.restoration': 'Nano Cleanse',
@@ -84,15 +98,28 @@ document.addEventListener('DOMContentLoaded', () => {
             'recents.clearConfirm': '确定要清空所有历史吗？',
             'recents.delete': '删除',
             'recents.deleteConfirm': '确定要删除该条记录吗？',
-            'recents.count': '{count} 个项目'
+            'recents.count': '{count} 个项目',
+            'batch.import': '导入照片',
+            'batch.downloadAll': '全部下载',
+            'batch.clear': '清空列表',
+            'batch.empty': '列表为空',
+            'batch.colName': '名称',
+            'batch.colSize': '大小',
+            'batch.colStatus': '状态',
+            'batch.count': '{count} 个项目',
+            'batch.status.waiting': '等待中',
+            'batch.status.processing': '处理中...',
+            'batch.status.done': '完成',
+            'batch.status.error': '错误'
         },
         ja: {
             'nav.library': 'ライブラリ',
             'nav.allPhotos': 'すべての写真',
+            'nav.batch': '一括削除',
             'nav.recents': '最近',
             'nav.tools': 'ツール',
             'nav.restoration': 'Nano Cleanse',
-            'toolbar.export': '書き出し...',
+            'toolbar.export': '書き出し...', 
             'toolbar.exportShort': '書き出し',
             'toolbar.reset': 'リセット',
             'toolbar.zoom': 'ズーム',
@@ -117,7 +144,19 @@ document.addEventListener('DOMContentLoaded', () => {
             'recents.clearConfirm': '履歴をすべて消去しますか？',
             'recents.delete': '削除',
             'recents.deleteConfirm': 'この項目を削除しますか？',
-            'recents.count': '{count} 件'
+            'recents.count': '{count} 件',
+            'batch.import': '写真を読み込む',
+            'batch.downloadAll': 'すべてダウンロード',
+            'batch.clear': 'リストを消去',
+            'batch.empty': 'キューに写真がありません',
+            'batch.colName': '名前',
+            'batch.colSize': 'サイズ',
+            'batch.colStatus': '状態',
+            'batch.count': '{count} 件',
+            'batch.status.waiting': '待機中',
+            'batch.status.processing': '処理中...', 
+            'batch.status.done': '完了',
+            'batch.status.error': 'エラー'
         }
     };
 
@@ -144,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.documentElement.lang = systemLang;
         document.querySelectorAll('[data-i18n]').forEach((el) => {
             const key = el.dataset.i18n;
-            if (key === 'recents.count') {
+            if (key === 'recents.count' || key === 'batch.count') {
                 const count = el.dataset.i18nArgs ?? '0';
                 el.textContent = t(key, { count });
                 return;
@@ -174,8 +213,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Elements
     const mainView = document.getElementById('mainView');
     const allPhotosNav = document.getElementById('allPhotosNav');
+    const batchNav = document.getElementById('batchNav');
     const recentsNav = document.getElementById('recentsNav');
     const restorationView = document.getElementById('restorationView');
+    const batchView = document.getElementById('batchView');
     const recentsView = document.getElementById('recentsView');
 
     const titleBar = document.getElementById('titleBar');
@@ -194,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const overlayContainer = document.getElementById('overlayContainer');
     const sliderHandle = document.getElementById('sliderHandle');
 
+    // Recents Elements
     const recentList = document.getElementById('recentList');
     const recentTable = document.getElementById('recentTable');
     const recentsViewListBtn = document.getElementById('recentsViewListBtn');
@@ -202,6 +244,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const recentsClearBtn = document.getElementById('recentsClearBtn');
     const recentsSearchInput = document.getElementById('recentsSearchInput');
     const recentsCount = document.getElementById('recentsCount');
+
+    // Batch Elements
+    const batchImportBtn = document.getElementById('batchImportBtn');
+    const batchDownloadAllBtn = document.getElementById('batchDownloadAllBtn');
+    const batchClearBtn = document.getElementById('batchClearBtn');
+    const batchList = document.getElementById('batchList');
+    const batchCount = document.getElementById('batchCount');
+    const batchFileInput = document.getElementById('batchFileInput');
+    const batchEmptyState = document.getElementById('batchEmptyState');
 
     // Logic
     const remover = new WatermarkRemover();
@@ -213,6 +264,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let isDraggingSlider = false;
     let currentBeforeUrl = null;
     let currentAfterUrl = null;
+
+    // --- Batch State ---
+    let batchQueue = [];
+    let isBatchProcessing = false;
 
     // --- Recents state (used by i18n too) ---
     let recentsSortOrder = 'desc'; // 'desc' newest first
@@ -238,6 +293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!titleBar) return;
         if (currentView === 'recents') {
             titleBar.textContent = t('recents.title');
+            return;
+        }
+        if (currentView === 'batch') {
+            titleBar.textContent = t('nav.batch');
             return;
         }
         if (titleState.type === 'file') {
@@ -267,17 +326,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateNavActive() {
         if (allPhotosNav) allPhotosNav.classList.toggle('active', currentView === 'restoration');
+        if (batchNav) {
+            const isBatch = currentView === 'batch';
+            batchNav.classList.toggle('active', isBatch);
+            batchNav.setAttribute('aria-expanded', isBatch ? 'true' : 'false');
+        }
         if (recentsNav) {
             const isRecents = currentView === 'recents';
             recentsNav.classList.toggle('active', isRecents);
             recentsNav.setAttribute('aria-expanded', isRecents ? 'true' : 'false');
         }
-        if (mainView) mainView.classList.toggle('is-recents', currentView === 'recents');
+        if (mainView) {
+            mainView.classList.toggle('is-recents', currentView === 'recents' || currentView === 'batch');
+        }
     }
 
     function setView(view) {
         currentView = view;
         if (restorationView) restorationView.hidden = view !== 'restoration';
+        if (batchView) batchView.hidden = view !== 'batch';
         if (recentsView) recentsView.hidden = view !== 'recents';
         updateNavActive();
         updateTitle();
@@ -764,6 +831,194 @@ document.addEventListener('DOMContentLoaded', () => {
         recentsViewGridBtn.addEventListener('click', () => applyRecentsLayout('grid'));
     }
 
+    // --- Batch Logic ---
+    if (batchNav) {
+        batchNav.addEventListener('click', () => setView('batch'));
+        batchNav.addEventListener('keydown', (e) => {
+             if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setView('batch');
+            }
+        });
+    }
+    if (batchImportBtn) batchImportBtn.addEventListener('click', () => batchFileInput.click());
+    if (batchFileInput) batchFileInput.addEventListener('change', (e) => handleBatchFiles(e.target.files));
+    if (batchClearBtn) batchClearBtn.addEventListener('click', clearBatchQueue);
+    if (batchDownloadAllBtn) batchDownloadAllBtn.addEventListener('click', downloadAllBatch);
+
+    function handleBatchFiles(files) {
+        if (!files || !files.length) return;
+        const newItems = Array.from(files).filter(f => f.type.startsWith('image/')).map(file => ({
+            id: createId(),
+            file,
+            status: 'waiting', // waiting, processing, done, error
+            processedBlob: null,
+            thumbDataUrl: ''
+        }));
+        batchQueue.push(...newItems);
+        renderBatchList();
+        // Generate thumbnails in background (do not block UX).
+        (async () => {
+            await Promise.all(newItems.map(async (item) => {
+                try {
+                    item.thumbDataUrl = await createThumbnail(item.file);
+                } catch {
+                    item.thumbDataUrl = '';
+                }
+            }));
+            renderBatchList();
+        })();
+        processBatchQueue();
+        batchFileInput.value = ''; // Reset
+    }
+
+    function clearBatchQueue() {
+        if (batchQueue.length && !confirm(t('recents.clearConfirm'))) return;
+        batchQueue = [];
+        renderBatchList();
+    }
+
+    async function processBatchQueue() {
+        if (isBatchProcessing) return;
+        const nextIdx = batchQueue.findIndex(i => i.status === 'waiting');
+        if (nextIdx === -1) {
+            isBatchProcessing = false;
+            updateBatchControls();
+            return;
+        }
+
+        isBatchProcessing = true;
+        const item = batchQueue[nextIdx];
+        item.status = 'processing';
+        renderBatchList(); // Update status text
+
+        try {
+            const blob = await remover.process(item.file);
+            item.processedBlob = blob;
+            item.status = 'done';
+            // Update thumb to processed result (match Recents style).
+            createThumbnail(blob).then((dataUrl) => {
+                item.thumbDataUrl = dataUrl || item.thumbDataUrl;
+                renderBatchList();
+            }).catch(() => {});
+            // Save to Recents
+            addRecentEntry(item.file.name, blob, item.file);
+        } catch (e) {
+            console.error(e);
+            item.status = 'error';
+        }
+
+        renderBatchList();
+        isBatchProcessing = false;
+        // Next
+        processBatchQueue();
+    }
+
+    function renderBatchList() {
+        if (!batchList) return;
+        batchList.replaceChildren();
+
+        if (!batchQueue.length) {
+            batchEmptyState.style.display = 'flex';
+            updateBatchControls();
+            if(batchCount) batchCount.textContent = t('batch.count', { count: 0 });
+            return;
+        }
+        batchEmptyState.style.display = 'none';
+
+        const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+
+        batchQueue.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'recent-item';
+
+            const thumb = document.createElement('img');
+            thumb.className = 'recent-thumb';
+            thumb.src = item.thumbDataUrl || '';
+            thumb.alt = item.file?.name || '';
+            thumb.loading = 'lazy';
+            
+            // Name
+            const name = document.createElement('div');
+            name.className = 'recent-name';
+            name.textContent = item.file.name;
+
+            const size = document.createElement('div');
+            size.className = 'recent-size';
+            const sizeBytes = item.processedBlob ? item.processedBlob.size : item.file.size;
+            size.textContent = formatSize(sizeBytes);
+
+            // Status
+            const status = document.createElement('div');
+            status.className = 'recent-col-status';
+            status.textContent = t(`batch.status.${item.status}`);
+            if (item.status === 'error') status.style.color = 'red';
+            if (item.status === 'done') status.style.color = 'var(--accent)';
+
+            // Actions
+            const actions = document.createElement('div');
+            actions.className = 'recent-col-actions';
+            
+            if (item.status === 'done') {
+                const dlBtn = document.createElement('button');
+                dlBtn.className = 'recent-delete'; // Reuse style for icon button (opacity on hover)
+                dlBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+                dlBtn.title = t('toolbar.exportShort');
+                dlBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    downloadBlob(item.processedBlob, item.file.name);
+                };
+                actions.appendChild(dlBtn);
+            }
+
+            div.appendChild(thumb);
+            div.appendChild(name);
+
+            if (isMobile) {
+                const meta = document.createElement('div');
+                meta.className = 'batch-meta';
+                meta.appendChild(size);
+                meta.appendChild(status);
+                div.appendChild(meta);
+            } else {
+                div.appendChild(size);
+                div.appendChild(status);
+            }
+
+            div.appendChild(actions);
+            batchList.appendChild(div);
+        });
+        
+        if(batchCount) batchCount.textContent = t('batch.count', { count: batchQueue.length });
+        updateBatchControls();
+    }
+
+    function updateBatchControls() {
+        if (batchDownloadAllBtn) {
+            const hasDone = batchQueue.some(i => i.status === 'done');
+            batchDownloadAllBtn.disabled = !hasDone;
+        }
+    }
+
+    function downloadBlob(blob, filename) {
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `${t('download.prefix')}${filename}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    async function downloadAllBatch() {
+        const doneItems = batchQueue.filter(i => i.status === 'done');
+        for (const item of doneItems) {
+            downloadBlob(item.processedBlob, item.file.name);
+            await new Promise(r => setTimeout(r, 200));
+        }
+    }
+
     // --- Drag & Drop ---
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -775,11 +1030,26 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.style.background = '';
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        const files = e.dataTransfer.files;
+        if (!files || !files.length) return;
+        if (files.length === 1) {
+            handleFile(files[0]);
+            return;
+        }
+        setView('batch');
+        handleBatchFiles(files);
     });
 
     fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleFile(e.target.files[0]);
+        const files = e.target.files;
+        if (!files || !files.length) return;
+        if (files.length === 1) {
+            handleFile(files[0]);
+        } else {
+            setView('batch');
+            handleBatchFiles(files);
+        }
+        fileInput.value = '';
     });
 
     async function handleFile(file) {

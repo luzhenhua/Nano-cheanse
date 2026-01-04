@@ -644,7 +644,7 @@ body {
 }
 
 /* --- Mobile / iOS Native Adaptation --- */
-@media (max-width: 768px) {
+	@media (max-width: 768px) {
     body {
         background: #000;
         height: 100vh;
@@ -712,13 +712,208 @@ body {
         padding: 12px 24px; font-size: 17px; width: 100%; max-width: 200px;
     }
     
-    .slider-handle {
-        width: 36px; height: 36px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        border: 2px solid #fff; background: rgba(255,255,255,0.2);
-        backdrop-filter: blur(4px);
-    }
-    
-    /* Hide text status on mobile */
-    #statusLeft, #statusRight { display: none; }
+	    .slider-handle {
+	        width: 36px; height: 36px;
+	        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+	        border: 2px solid #fff; background: rgba(255,255,255,0.2);
+	        backdrop-filter: blur(4px);
+	    }
+	    
+	    /* Hide text status on mobile */
+	    #statusLeft, #statusRight { display: none; }
+
+	    /* Recents + Batch views: match iOS dark UI */
+	    .main-view.is-recents {
+	        padding-bottom: 0;
+	    }
+
+	    .main-view.is-recents .recents-page-header {
+	        height: auto;
+	        padding: 12px 16px;
+	        background: rgba(30, 30, 30, 0.72);
+	        border-bottom: 0.5px solid rgba(255,255,255,0.10);
+	        backdrop-filter: blur(20px);
+	        -webkit-backdrop-filter: blur(20px);
+	    }
+
+	    .main-view.is-recents .recents-page-body,
+	    .main-view.is-recents .recent-table,
+	    .main-view.is-recents .recent-list {
+	        background: transparent;
+	    }
+
+	    .main-view.is-recents .recent-table-header {
+	        display: none;
+	    }
+
+	    .main-view.is-recents .recent-list {
+	        padding: 12px 12px calc(64px + env(safe-area-inset-bottom));
+	        gap: 10px;
+	    }
+
+	    .main-view.is-recents .recent-item {
+	        padding: 12px 12px;
+	        border-radius: 14px;
+	        border: 0.5px solid rgba(255,255,255,0.10);
+	        background: rgba(255,255,255,0.06);
+	        border-bottom: none;
+	    }
+
+	    .main-view.is-recents .recent-item:nth-child(even) {
+	        background: rgba(255,255,255,0.06);
+	    }
+
+	    .main-view.is-recents .recent-item:hover {
+	        background: rgba(255,255,255,0.08);
+	    }
+
+	    .main-view.is-recents .recent-name {
+	        color: #fff;
+	        padding-left: 0;
+	    }
+
+	    .main-view.is-recents .recent-date {
+	        display: none;
+	    }
+
+	    .main-view.is-recents .recent-size {
+	        color: rgba(235, 235, 245, 0.6);
+	        padding-left: 0;
+	        justify-self: end;
+	        font-size: 12px;
+	        font-feature-settings: "tnum";
+	    }
+
+	    .main-view.is-recents .recent-thumb {
+	        border-color: rgba(255,255,255,0.12);
+	        background: rgba(255,255,255,0.06);
+	    }
+
+	    .main-view.is-recents .recent-delete {
+	        opacity: 1;
+	        width: 32px;
+	        height: 32px;
+	        border-radius: 10px;
+	        border: 0.5px solid rgba(255,255,255,0.12);
+	        background: rgba(255,255,255,0.06);
+	        color: rgba(235, 235, 245, 0.7);
+	    }
+
+	    .main-view.is-recents .recent-delete:hover {
+	        background: rgba(255,255,255,0.10);
+	        color: rgba(235, 235, 245, 0.95);
+	    }
+
+	    .main-view.is-recents #recentTable {
+	        --recent-cols: 36px 1fr 84px 32px;
+	    }
+
+	    .main-view.is-recents .recents-footer {
+	        position: fixed;
+	        left: 0;
+	        right: 0;
+	        bottom: 0;
+	        height: 52px;
+	        padding: 0 16px;
+	        padding-bottom: env(safe-area-inset-bottom);
+	        display: flex;
+	        align-items: center;
+	        justify-content: center;
+	        background: rgba(30, 30, 30, 0.78);
+	        border-top: 0.5px solid rgba(255,255,255,0.10);
+	        color: rgba(235, 235, 245, 0.6);
+	        backdrop-filter: blur(20px);
+	        -webkit-backdrop-filter: blur(20px);
+	        z-index: 1000;
+	    }
+
+	    /* Batch view (mobile): nicer action layout + columns */
+	    .view-batch .header-spacer {
+	        display: none;
+	    }
+
+	    .view-batch .recents-page-actions {
+	        display: grid;
+	        grid-template-columns: 1fr 44px;
+	        gap: 10px;
+	        align-items: center;
+	    }
+
+	    .view-batch #batchImportBtn {
+	        grid-column: 1 / -1;
+	        width: 100%;
+	        max-width: 520px;
+	        justify-self: center;
+	        padding: 12px 18px;
+	        border-radius: 12px;
+	        box-shadow: 0 6px 18px rgba(0, 122, 255, 0.28);
+	    }
+
+	    .view-batch #batchDownloadAllBtn {
+	        height: 36px;
+	        border-radius: 12px;
+	        padding: 8px 12px;
+	        border: 0.5px solid rgba(255,255,255,0.12);
+	        background: rgba(255,255,255,0.06);
+	        color: rgba(235, 235, 245, 0.85);
+	        justify-self: start;
+	    }
+
+	    .view-batch #batchDownloadAllBtn:disabled {
+	        opacity: 0.45;
+	    }
+
+	    .view-batch #batchClearBtn {
+	        width: 44px;
+	        height: 36px;
+	        border-radius: 12px;
+	        border: 0.5px solid rgba(255,255,255,0.12);
+	        background: rgba(255,255,255,0.06);
+	        color: rgba(235, 235, 245, 0.7);
+	        justify-self: end;
+	    }
+
+	    .view-batch #batchTable {
+	        --recent-cols: 36px 1fr minmax(88px, 120px) 32px;
+	    }
+
+	    .view-batch #batchEmptyState {
+	        padding: 24px 0;
+	    }
+
+	    .view-batch .batch-meta {
+	        display: flex;
+	        flex-direction: column;
+	        align-items: flex-end;
+	        justify-content: center;
+	        gap: 2px;
+	        min-width: 0;
+	    }
+
+	    .view-batch .batch-meta .recent-size,
+	    .view-batch .batch-meta .recent-col-status {
+	        padding-left: 0;
+	        justify-self: end;
+	        white-space: nowrap;
+	        overflow: hidden;
+	        text-overflow: ellipsis;
+	    }
+}
+
+#batchTable {
+    --recent-cols: 40px 1fr 100px 120px 40px;
+}
+.recent-col-status {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.recent-col-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
