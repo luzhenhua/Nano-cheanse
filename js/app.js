@@ -780,6 +780,34 @@ document.addEventListener('DOMContentLoaded', () => {
         syncOverlay();
     }
 
+    function loadBatchItem(item) {
+        if (!item || !item.file) return;
+        setView('restoration');
+
+        const beforeUrl = URL.createObjectURL(item.file);
+        currentBeforeUrl = setImageSource(imgBefore, beforeUrl, currentBeforeUrl);
+
+        const afterBlob = item.processedBlob || null;
+        processedBlob = afterBlob;
+        const afterUrl = URL.createObjectURL(afterBlob || item.file);
+        currentAfterUrl = setImageSource(imgAfter, afterUrl, currentAfterUrl);
+
+        showCanvas();
+        titleState = { type: 'file', value: item.file.name || APP_NAME };
+        updateTitle();
+
+        if (afterBlob) {
+            setStatus('edited', Math.round(afterBlob.size / 1024));
+            downloadBtn.disabled = false;
+        } else {
+            setStatus(item.status === 'processing' ? 'processing' : 'ready');
+            downloadBtn.disabled = true;
+        }
+
+        updateSlider(0.5);
+        syncOverlay();
+    }
+
     // --- View switching events ---
     if (allPhotosNav) {
         allPhotosNav.addEventListener('click', () => setView('restoration'));
@@ -937,11 +965,13 @@ document.addEventListener('DOMContentLoaded', () => {
             thumb.src = item.thumbDataUrl || '';
             thumb.alt = item.file?.name || '';
             thumb.loading = 'lazy';
+            thumb.addEventListener('click', () => loadBatchItem(item));
             
             // Name
             const name = document.createElement('div');
             name.className = 'recent-name';
             name.textContent = item.file.name;
+            name.addEventListener('click', () => loadBatchItem(item));
 
             const size = document.createElement('div');
             size.className = 'recent-size';
